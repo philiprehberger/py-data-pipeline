@@ -153,3 +153,77 @@ def test_to_csv(tmp_path):
 def test_empty_pipeline():
     assert Pipeline([]).collect() == []
     assert Pipeline([]).count() == 0
+
+
+# --- Validation ---
+
+
+def test_chunk_invalid_size():
+    with pytest.raises(ValueError, match="positive"):
+        Pipeline([1]).chunk(0)
+
+
+def test_chunk_negative_size():
+    with pytest.raises(ValueError, match="positive"):
+        Pipeline([1]).chunk(-1)
+
+
+def test_take_negative():
+    with pytest.raises(ValueError, match="non-negative"):
+        Pipeline([1]).take(-1)
+
+
+def test_skip_negative():
+    with pytest.raises(ValueError, match="non-negative"):
+        Pipeline([1]).skip(-1)
+
+
+# --- Edge cases ---
+
+
+def test_take_zero():
+    result = Pipeline([1, 2, 3]).take(0).collect()
+    assert result == []
+
+
+def test_chunk_size_one():
+    result = Pipeline([1, 2]).chunk(1).collect()
+    assert result == [[1], [2]]
+
+
+def test_avg_empty():
+    result = Pipeline([]).avg()
+    assert result == 0.0
+
+
+def test_min_empty():
+    result = Pipeline([]).min()
+    assert result is None
+
+
+def test_max_empty():
+    result = Pipeline([]).max()
+    assert result is None
+
+
+def test_sum_with_key_callable():
+    data = [{"amount": 10}, {"amount": 20}]
+    result = Pipeline(data).sum(lambda x: x["amount"])
+    assert result == 30
+
+
+def test_to_csv_empty(tmp_path):
+    path = tmp_path / "out.csv"
+    Pipeline([]).to_csv(path)
+    assert path.read_text() == ""
+
+
+def test_chained_with_take():
+    result = (
+        Pipeline(range(10))
+        .filter(lambda x: x % 2 == 0)
+        .map(lambda x: x * 10)
+        .take(3)
+        .collect()
+    )
+    assert result == [0, 20, 40]
