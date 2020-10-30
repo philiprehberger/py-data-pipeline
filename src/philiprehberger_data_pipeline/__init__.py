@@ -10,7 +10,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, Callable, Generic, Iterable, Iterator, TypeVar
 
-__all__ = ["Pipeline", "AggregateResult"]
+__all__ = ["Pipeline"]
 
 T = TypeVar("T")
 U = TypeVar("U")
