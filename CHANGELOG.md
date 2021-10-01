@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3
+
+- Add Development section to README
+
 ## 0.2.1
 
 - Remove undefined `AggregateResult` from `__all__`
