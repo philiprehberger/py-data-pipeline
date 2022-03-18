@@ -2,7 +2,7 @@
 
 Composable data transformation pipeline with lazy evaluation.
 
-## Install
+## Installation
 
 ```bash
 pip install philiprehberger-data-pipeline
@@ -87,6 +87,12 @@ Pipeline(data).filter(...).to_json("output.json")
 | `.to_csv(path)` | Export as CSV |
 | `.to_json(path)` | Export as JSON |
 
+
+## API
+
+| Function / Class | Description |
+|------------------|-------------|
+| `Pipeline(data)` | Composable, lazy data transformation pipeline with chainable operations and terminal methods |
 
 ## Development
 
