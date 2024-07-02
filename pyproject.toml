@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "philiprehberger-data-pipeline"
-version = "0.3.1"
-description = "Composable data transformation pipeline with lazy evaluation"
+version = "0.4.0"
+description = "Composable data transformation pipeline with lazy evaluation."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"

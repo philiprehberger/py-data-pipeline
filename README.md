@@ -14,8 +14,6 @@ pip install philiprehberger-data-pipeline
 
 ## Usage
 
-### Basic Pipeline
-
 ```python
 from philiprehberger_data_pipeline import Pipeline
 
@@ -38,6 +36,8 @@ result = (
 ### Reusable Pipelines
 
 ```python
+from philiprehberger_data_pipeline import Pipeline
+
 clean_users = (
     Pipeline.define()
     .filter(lambda r: r.get("email"))
@@ -49,34 +49,90 @@ active = clean_users.run(active_users)
 archived = clean_users.run(archived_users)
 ```
 
+### Tap (Side Effects)
+
+```python
+from philiprehberger_data_pipeline import Pipeline
+
+result = (
+    Pipeline([1, 2, 3])
+    .tap(lambda x: print(f"Processing: {x}"))
+    .map(lambda x: x * 2)
+    .collect()
+)
+# Prints each item without altering the data
+```
+
+### Branch (Parallel Splits)
+
+```python
+from philiprehberger_data_pipeline import Pipeline
+
+result = (
+    Pipeline([1, 2, 3])
+    .branch(
+        lambda p: p.map(lambda x: x * 2).collect(),
+        lambda p: p.filter(lambda x: x > 1).collect(),
+    )
+    .collect()
+)
+# [2, 4, 6, 2, 3]
+```
+
+### Retry Wrapper
+
+```python
+from philiprehberger_data_pipeline import Pipeline, retry
+
+def fetch_url(url):
+    # might fail transiently
+    return requests.get(url).text
+
+result = Pipeline(urls).map(retry(fetch_url, attempts=3, delay=1.0)).collect()
+```
+
+### Pipeline Composition
+
+```python
+from philiprehberger_data_pipeline import Pipeline
+
+clean = Pipeline.define().filter(lambda x: x > 0).map(lambda x: x * 2)
+limit = Pipeline.define().take(3)
+
+combined = clean + limit
+combined.run([−1, 5, 0, 3, 7, 2])
+# [10, 6, 14]
+```
+
+### Dry Run
+
+```python
+from philiprehberger_data_pipeline import Pipeline
+
+log = (
+    Pipeline([1, 2, 3, 4])
+    .filter(lambda x: x > 2)
+    .map(lambda x: x * 10)
+    .dry_run()
+)
+# [{"step": 0, "name": "filter", "input": [1,2,3,4], "output": [3,4]},
+#  {"step": 1, "name": "map", "input": [3,4], "output": [30,40]}]
+```
+
 ### Sliding Window
 
 ```python
-data = [1, 2, 3, 4, 5]
+from philiprehberger_data_pipeline import Pipeline
 
-# Window of size 3, step 1
-Pipeline(data).window(3, 1).collect()
+Pipeline([1, 2, 3, 4, 5]).window(3, 1).collect()
 # [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
-
-# Window of size 3, step 2
-Pipeline(data).window(3, 2).collect()
-# [[1, 2, 3], [3, 4, 5]]
-```
-
-### Deduplication
-
-```python
-Pipeline([1, 2, 3, 2, 1, 4]).deduplicate().collect()
-# [1, 2, 3, 4]
-
-# Works with unhashable items too
-Pipeline([{"a": 1}, {"a": 1}, {"b": 2}]).deduplicate().collect()
-# [{"a": 1}, {"b": 2}]
 ```
 
 ### Aggregations
 
 ```python
+from philiprehberger_data_pipeline import Pipeline
+
 p = Pipeline(sales_data)
 total = p.sum("amount")
 average = p.avg("amount")
@@ -86,15 +142,17 @@ grouped = p.group_by("category")
 ### Export
 
 ```python
-Pipeline(data).filter(...).to_csv("output.csv")
-Pipeline(data).filter(...).to_json("output.json")
+from philiprehberger_data_pipeline import Pipeline
+
+Pipeline(data).filter(lambda x: x["active"]).to_csv("output.csv")
+Pipeline(data).filter(lambda x: x["active"]).to_json("output.json")
 ```
 
 ## API
 
 | Function / Class | Description |
 |------------------|-------------|
-| `Pipeline(data)` | Composable, lazy data transformation pipeline with chainable operations and terminal methods |
+| `Pipeline(data)` | Composable, lazy data transformation pipeline |
 | `.filter(fn)` | Keep items where fn returns True |
 | `.map(fn)` | Transform each item |
 | `.flat_map(fn)` | Transform and flatten |
@@ -105,8 +163,12 @@ Pipeline(data).filter(...).to_json("output.json")
 | `.skip(n)` | Skip first n items |
 | `.chunk(size)` | Split into chunks |
 | `.each(fn)` | Execute side effect for each item |
+| `.tap(fn)` | Side effect without altering data, skipped in dry run |
 | `.window(size, step)` | Sliding window grouping |
 | `.deduplicate()` | Remove duplicate items preserving order |
+| `.branch(*fns)` | Split into parallel branches and merge results |
+| `.dry_run(data)` | Log each step's input/output without side effects |
+| `pipeline_a + pipeline_b` | Compose two pipelines into one |
 | `.collect()` | Execute and return list |
 | `.first()` | Return first item |
 | `.count()` | Count items |
@@ -118,6 +180,7 @@ Pipeline(data).filter(...).to_json("output.json")
 | `.group_by(key)` | Group into dict |
 | `.to_csv(path)` | Export as CSV |
 | `.to_json(path)` | Export as JSON |
+| `retry(fn, attempts, delay, on_error)` | Wrap a step function with configurable retry logic |
 
 ## Development
 

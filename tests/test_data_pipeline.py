@@ -1,7 +1,7 @@
 import json
 import pytest
 from pathlib import Path
-from philiprehberger_data_pipeline import Pipeline
+from philiprehberger_data_pipeline import Pipeline, retry
 
 
 def test_filter():
@@ -227,3 +227,232 @@ def test_chained_with_take():
         .collect()
     )
     assert result == [0, 20, 40]
+
+
+# --- tap ---
+
+
+def test_tap_does_not_alter_data():
+    side = []
+    result = Pipeline([1, 2, 3]).tap(lambda x: side.append(x * 10)).collect()
+    assert result == [1, 2, 3]
+    assert side == [10, 20, 30]
+
+
+def test_tap_called_in_order():
+    log = []
+    result = (
+        Pipeline([1, 2, 3])
+        .tap(lambda x: log.append(("before", x)))
+        .map(lambda x: x + 10)
+        .tap(lambda x: log.append(("after", x)))
+        .collect()
+    )
+    assert result == [11, 12, 13]
+    assert ("before", 1) in log
+    assert ("after", 11) in log
+
+
+# --- branch ---
+
+
+def test_branch_basic():
+    result = (
+        Pipeline([1, 2, 3])
+        .branch(
+            lambda p: p.map(lambda x: x * 2).collect(),
+            lambda p: p.filter(lambda x: x > 1).collect(),
+        )
+        .collect()
+    )
+    assert result == [2, 4, 6, 2, 3]
+
+
+def test_branch_single():
+    result = (
+        Pipeline([10, 20])
+        .branch(lambda p: p.map(lambda x: x + 1).collect())
+        .collect()
+    )
+    assert result == [11, 21]
+
+
+def test_branch_empty_raises():
+    with pytest.raises(ValueError, match="at least one"):
+        Pipeline([1]).branch()
+
+
+def test_branch_preserves_source():
+    """Each branch receives the same snapshot of data."""
+    results = []
+
+    def branch_a(p):
+        items = p.collect()
+        results.append(items)
+        return items
+
+    def branch_b(p):
+        items = p.collect()
+        results.append(items)
+        return items
+
+    Pipeline([1, 2]).branch(branch_a, branch_b).collect()
+    assert results[0] == [1, 2]
+    assert results[1] == [1, 2]
+
+
+# --- retry ---
+
+
+def test_retry_succeeds_first_try():
+    result = retry(lambda x: x * 2, attempts=3)(5)
+    assert result == 10
+
+
+def test_retry_succeeds_after_failures():
+    call_count = 0
+
+    def flaky(x):
+        nonlocal call_count
+        call_count += 1
+        if call_count < 3:
+            raise ValueError("not yet")
+        return x
+
+    wrapped = retry(flaky, attempts=3)
+    assert wrapped(42) == 42
+    assert call_count == 3
+
+
+def test_retry_exhausts_attempts():
+    def always_fail(x):
+        raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError, match="boom"):
+        retry(always_fail, attempts=2)(1)
+
+
+def test_retry_on_error_callback():
+    errors = []
+
+    def fail_once(x):
+        if not errors:
+            raise ValueError("oops")
+        return x
+
+    def on_err(exc, attempt):
+        errors.append((str(exc), attempt))
+
+    wrapped = retry(fail_once, attempts=3, on_error=on_err)
+    result = wrapped(99)
+    assert result == 99
+    assert len(errors) == 1
+    assert errors[0] == ("oops", 1)
+
+
+def test_retry_invalid_attempts():
+    with pytest.raises(ValueError, match="attempts must be >= 1"):
+        retry(lambda x: x, attempts=0)
+
+
+def test_retry_in_pipeline():
+    call_counts = {}
+
+    def flaky_double(x):
+        call_counts[x] = call_counts.get(x, 0) + 1
+        if call_counts[x] < 2:
+            raise ValueError("retry me")
+        return x * 2
+
+    result = Pipeline([1, 2, 3]).map(retry(flaky_double, attempts=3)).collect()
+    assert result == [2, 4, 6]
+
+
+# --- pipeline composition (__add__) ---
+
+
+def test_add_pipelines():
+    a = Pipeline.define().filter(lambda x: x > 1)
+    b = Pipeline.define().map(lambda x: x * 10)
+    combined = a + b
+    assert combined.run([1, 2, 3]) == [20, 30]
+
+
+def test_add_preserves_originals():
+    a = Pipeline.define().filter(lambda x: x > 1)
+    b = Pipeline.define().map(lambda x: x * 10)
+    _ = a + b
+    # Originals should be unchanged
+    assert a.run([1, 2, 3]) == [2, 3]
+    assert b.run([1, 2, 3]) == [10, 20, 30]
+
+
+def test_add_with_data():
+    p1 = Pipeline([1, 2, 3, 4]).filter(lambda x: x % 2 == 0)
+    p2 = Pipeline.define().map(lambda x: x * 100)
+    combined = p1 + p2
+    assert combined.collect() == [200, 400]
+
+
+def test_add_empty_pipelines():
+    a = Pipeline.define()
+    b = Pipeline.define()
+    combined = a + b
+    assert combined.run([1, 2]) == [1, 2]
+
+
+def test_add_returns_not_implemented_for_non_pipeline():
+    p = Pipeline.define()
+    assert p.__add__(42) is NotImplemented
+
+
+# --- dry_run ---
+
+
+def test_dry_run_basic():
+    log = (
+        Pipeline([1, 2, 3, 4])
+        .filter(lambda x: x > 2)
+        .map(lambda x: x * 10)
+        .dry_run()
+    )
+    assert len(log) == 2
+    assert log[0]["step"] == 0
+    assert log[0]["input"] == [1, 2, 3, 4]
+    assert log[0]["output"] == [3, 4]
+    assert log[1]["step"] == 1
+    assert log[1]["input"] == [3, 4]
+    assert log[1]["output"] == [30, 40]
+
+
+def test_dry_run_skips_tap():
+    side = []
+    log = (
+        Pipeline([1, 2])
+        .tap(lambda x: side.append(x))
+        .map(lambda x: x + 1)
+        .dry_run()
+    )
+    # tap should be skipped, side effects not executed
+    assert side == []
+    tap_entries = [e for e in log if e.get("skipped")]
+    assert len(tap_entries) == 1
+    assert tap_entries[0]["name"] == "tap"
+
+
+def test_dry_run_with_data_argument():
+    pipe = Pipeline.define().filter(lambda x: x > 5)
+    log = pipe.dry_run([1, 5, 10])
+    assert len(log) == 1
+    assert log[0]["output"] == [10]
+
+
+def test_dry_run_no_data_raises():
+    pipe = Pipeline.define().map(lambda x: x)
+    with pytest.raises(ValueError, match="No data source"):
+        pipe.dry_run()
+
+
+def test_dry_run_empty_pipeline():
+    log = Pipeline([1, 2, 3]).dry_run()
+    assert log == []
