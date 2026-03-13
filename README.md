@@ -80,6 +80,9 @@ Pipeline(data).filter(...).to_json("output.json")
 | `.count()` | Count items |
 | `.sum(key)` | Sum values |
 | `.avg(key)` | Average values |
+| `.min(key)` | Find minimum value |
+| `.max(key)` | Find maximum value |
+| `.reduce(fn, initial)` | Reduce to single value |
 | `.group_by(key)` | Group into dict |
 | `.to_csv(path)` | Export as CSV |
 | `.to_json(path)` | Export as JSON |

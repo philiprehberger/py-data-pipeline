@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- Add input validation for `chunk()`, `take()`, and `skip()` with clear error messages
+- Expand test suite with edge case and validation tests
+- Add `min()`, `max()`, `reduce()` to README operations table
+
 ## 0.1.1
 
 - Add project URLs to pyproject.toml

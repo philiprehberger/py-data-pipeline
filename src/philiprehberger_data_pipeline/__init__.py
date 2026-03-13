@@ -107,6 +107,9 @@ class Pipeline(Generic[T]):
 
     def take(self, n: int) -> Pipeline[T]:
         """Take the first n items."""
+        if n < 0:
+            raise ValueError("take count must be non-negative")
+
         def _take(data: Iterable) -> Iterable:
             for i, item in enumerate(data):
                 if i >= n:
@@ -116,6 +119,9 @@ class Pipeline(Generic[T]):
 
     def skip(self, n: int) -> Pipeline[T]:
         """Skip the first n items."""
+        if n < 0:
+            raise ValueError("skip count must be non-negative")
+
         def _skip(data: Iterable) -> Iterable:
             for i, item in enumerate(data):
                 if i >= n:
@@ -132,6 +138,9 @@ class Pipeline(Generic[T]):
 
     def chunk(self, size: int) -> Pipeline[list[T]]:
         """Split into chunks of the given size."""
+        if size <= 0:
+            raise ValueError("chunk size must be positive")
+
         def _chunk(data: Iterable) -> Iterable:
             batch: list = []
             for item in data:
