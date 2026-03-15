@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Remove undefined `AggregateResult` from `__all__`
+
 ## 0.2.0
 
 - Add input validation for `chunk()`, `take()`, and `skip()` with clear error messages
