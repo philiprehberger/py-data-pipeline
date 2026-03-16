@@ -87,6 +87,14 @@ Pipeline(data).filter(...).to_json("output.json")
 | `.to_csv(path)` | Export as CSV |
 | `.to_json(path)` | Export as JSON |
 
+
+## Development
+
+```bash
+pip install -e .
+python -m pytest tests/ -v
+```
+
 ## License
 
 MIT
