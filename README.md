@@ -1,5 +1,9 @@
 # philiprehberger-data-pipeline
 
+[![Tests](https://github.com/philiprehberger/py-data-pipeline/actions/workflows/publish.yml/badge.svg)](https://github.com/philiprehberger/py-data-pipeline/actions/workflows/publish.yml)
+[![PyPI version](https://img.shields.io/pypi/v/philiprehberger-data-pipeline.svg)](https://pypi.org/project/philiprehberger-data-pipeline/)
+[![License](https://img.shields.io/github/license/philiprehberger/py-data-pipeline)](LICENSE)
+
 Composable data transformation pipeline with lazy evaluation.
 
 ## Installation
@@ -59,10 +63,11 @@ Pipeline(data).filter(...).to_csv("output.csv")
 Pipeline(data).filter(...).to_json("output.json")
 ```
 
-## Operations
+## API
 
-| Transform | Description |
-|-----------|-------------|
+| Function / Class | Description |
+|------------------|-------------|
+| `Pipeline(data)` | Composable, lazy data transformation pipeline |
 | `.filter(fn)` | Keep items where fn returns True |
 | `.map(fn)` | Transform each item |
 | `.flat_map(fn)` | Transform and flatten |
@@ -72,9 +77,6 @@ Pipeline(data).filter(...).to_json("output.json")
 | `.skip(n)` | Skip first n items |
 | `.chunk(size)` | Split into chunks |
 | `.flatten()` | Flatten one level of nesting |
-
-| Terminal | Description |
-|----------|-------------|
 | `.collect()` | Execute and return list |
 | `.first()` | Return first item |
 | `.count()` | Count items |
@@ -86,13 +88,6 @@ Pipeline(data).filter(...).to_json("output.json")
 | `.group_by(key)` | Group into dict |
 | `.to_csv(path)` | Export as CSV |
 | `.to_json(path)` | Export as JSON |
-
-
-## API
-
-| Function / Class | Description |
-|------------------|-------------|
-| `Pipeline(data)` | Composable, lazy data transformation pipeline with chainable operations and terminal methods |
 
 ## Development
 
