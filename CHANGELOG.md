@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 (2026-03-27)
+
+- Add `window(size, step)` for sliding window grouping
+- Add `deduplicate()` to remove duplicate items preserving order
+- Add pytest and mypy configuration to pyproject.toml
+- Add issue templates, PR template, and dependabot config
+- Update README with full badges, Support section, and new feature docs
+
 ## 0.2.3
 
 - Add Development section to README

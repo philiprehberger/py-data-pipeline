@@ -136,6 +136,60 @@ class Pipeline(Generic[T]):
                 yield item
         return self._chain(_each)
 
+    def window(self, size: int, step: int = 1) -> Pipeline[list[T]]:
+        """Sliding window that groups items into overlapping sublists.
+
+        Args:
+            size: Window size (number of items per group).
+            step: Number of items to advance between windows.
+
+        Example:
+            Pipeline([1,2,3,4,5]).window(3, 1).collect()
+            # [[1,2,3], [2,3,4], [3,4,5]]
+        """
+        if size <= 0:
+            raise ValueError("window size must be positive")
+        if step <= 0:
+            raise ValueError("window step must be positive")
+
+        def _window(data: Iterable) -> Iterable:
+            buf: list = []
+            for item in data:
+                buf.append(item)
+                if len(buf) == size:
+                    yield list(buf)
+                    buf = buf[step:]
+        return self._chain(_window)
+
+    def deduplicate(self) -> Pipeline[T]:
+        """Remove duplicate items, keeping first occurrence and preserving order.
+
+        Uses a set for O(1) lookups when items are hashable; falls back to
+        list-based comparison for unhashable items.
+        """
+        def _deduplicate(data: Iterable) -> Iterable:
+            seen_set: set = set()
+            seen_list: list = []
+            use_set = True
+            for item in data:
+                if use_set:
+                    try:
+                        if item not in seen_set:
+                            seen_set.add(item)
+                            yield item
+                    except TypeError:
+                        # Item is unhashable — switch to list-based
+                        use_set = False
+                        seen_list = list(seen_set)
+                        if item not in seen_list:
+                            seen_list.append(item)
+                            yield item
+                else:
+                    if item not in seen_list:
+                        seen_list.append(item)
+                        yield item
+        return self._chain(_deduplicate)
+
     def chunk(self, size: int) -> Pipeline[list[T]]:
         """Split into chunks of the given size."""
         if size <= 0:

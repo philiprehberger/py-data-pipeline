@@ -1,5 +1,14 @@
 # philiprehberger-data-pipeline
 
+[![Tests](https://github.com/philiprehberger/py-data-pipeline/actions/workflows/publish.yml/badge.svg)](https://github.com/philiprehberger/py-data-pipeline/actions/workflows/publish.yml)
+[![PyPI version](https://img.shields.io/pypi/v/philiprehberger-data-pipeline.svg)](https://pypi.org/project/philiprehberger-data-pipeline/)
+[![GitHub release](https://img.shields.io/github/v/release/philiprehberger/py-data-pipeline)](https://github.com/philiprehberger/py-data-pipeline/releases)
+[![Last updated](https://img.shields.io/github/last-commit/philiprehberger/py-data-pipeline)](https://github.com/philiprehberger/py-data-pipeline/commits/main)
+[![License](https://img.shields.io/github/license/philiprehberger/py-data-pipeline)](LICENSE)
+[![Bug Reports](https://img.shields.io/github/issues/philiprehberger/py-data-pipeline/bug)](https://github.com/philiprehberger/py-data-pipeline/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
+[![Feature Requests](https://img.shields.io/github/issues/philiprehberger/py-data-pipeline/enhancement)](https://github.com/philiprehberger/py-data-pipeline/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement)
+[![Sponsor](https://img.shields.io/badge/sponsor-GitHub%20Sponsors-ec6cb9)](https://github.com/sponsors/philiprehberger)
+
 Composable data transformation pipeline with lazy evaluation.
 
 ## Installation
@@ -9,6 +18,8 @@ pip install philiprehberger-data-pipeline
 ```
 
 ## Usage
+
+### Basic Pipeline
 
 ```python
 from philiprehberger_data_pipeline import Pipeline
@@ -43,6 +54,31 @@ active = clean_users.run(active_users)
 archived = clean_users.run(archived_users)
 ```
 
+### Sliding Window
+
+```python
+data = [1, 2, 3, 4, 5]
+
+# Window of size 3, step 1
+Pipeline(data).window(3, 1).collect()
+# [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
+
+# Window of size 3, step 2
+Pipeline(data).window(3, 2).collect()
+# [[1, 2, 3], [3, 4, 5]]
+```
+
+### Deduplication
+
+```python
+Pipeline([1, 2, 3, 2, 1, 4]).deduplicate().collect()
+# [1, 2, 3, 4]
+
+# Works with unhashable items too
+Pipeline([{"a": 1}, {"a": 1}, {"b": 2}]).deduplicate().collect()
+# [{"a": 1}, {"b": 2}]
+```
+
 ### Aggregations
 
 ```python
@@ -59,22 +95,23 @@ Pipeline(data).filter(...).to_csv("output.csv")
 Pipeline(data).filter(...).to_json("output.json")
 ```
 
-## Operations
+## API
 
-| Transform | Description |
-|-----------|-------------|
+| Function / Class | Description |
+|------------------|-------------|
+| `Pipeline(data)` | Composable, lazy data transformation pipeline with chainable operations and terminal methods |
 | `.filter(fn)` | Keep items where fn returns True |
 | `.map(fn)` | Transform each item |
 | `.flat_map(fn)` | Transform and flatten |
+| `.flatten()` | Flatten one level of nesting |
 | `.sort_by(key)` | Sort by key (string or callable) |
 | `.unique_by(key)` | Remove duplicates by key |
 | `.take(n)` | Take first n items |
 | `.skip(n)` | Skip first n items |
 | `.chunk(size)` | Split into chunks |
-| `.flatten()` | Flatten one level of nesting |
-
-| Terminal | Description |
-|----------|-------------|
+| `.each(fn)` | Execute side effect for each item |
+| `.window(size, step)` | Sliding window grouping |
+| `.deduplicate()` | Remove duplicate items preserving order |
 | `.collect()` | Execute and return list |
 | `.first()` | Return first item |
 | `.count()` | Count items |
@@ -87,13 +124,6 @@ Pipeline(data).filter(...).to_json("output.json")
 | `.to_csv(path)` | Export as CSV |
 | `.to_json(path)` | Export as JSON |
 
-
-## API
-
-| Function / Class | Description |
-|------------------|-------------|
-| `Pipeline(data)` | Composable, lazy data transformation pipeline with chainable operations and terminal methods |
-
 ## Development
 
 ```bash
@@ -101,6 +131,13 @@ pip install -e .
 python -m pytest tests/ -v
 ```
 
+## Support
+
+If you find this package useful, consider giving it a star on GitHub — it helps motivate continued maintenance and development.
+
+[![LinkedIn](https://img.shields.io/badge/Philip%20Rehberger-LinkedIn-0A66C2?logo=linkedin)](https://www.linkedin.com/in/philiprehberger)
+[![More packages](https://img.shields.io/badge/more-open%20source%20packages-blue)](https://philiprehberger.com/open-source-packages)
+
 ## License
 
-MIT
+[MIT](LICENSE)
