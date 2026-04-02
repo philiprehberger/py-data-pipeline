@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 (2026-04-01)
+
+- Add `branch()` to split pipeline into parallel branches that merge results
+- Add `tap()` step for side effects (logging, metrics) without altering data, skipped in dry-run mode
+- Add `retry()` wrapper for individual steps with configurable retries, delay, and error callback
+- Add pipeline composition via `+` operator to combine two pipelines into one
+- Add `dry_run()` mode that logs each step's input/output without executing side effects
+
 ## 0.3.1 (2026-03-31)
 
 - Standardize README to 3-badge format with emoji Support section
