@@ -180,6 +180,10 @@ Pipeline(data).filter(lambda x: x["active"]).to_json("output.json")
 | `.group_by(key)` | Group into dict |
 | `.to_csv(path)` | Export as CSV |
 | `.to_json(path)` | Export as JSON |
+| `.enumerate(start)` | Pair each item with its index |
+| `.zip_with(other)` | Pair items with another iterable |
+| `.take_while(fn)` | Take items while predicate is True |
+| `.skip_while(fn)` | Skip items while predicate is True |
 | `retry(fn, attempts, delay, on_error)` | Wrap a step function with configurable retry logic |
 
 ## Development

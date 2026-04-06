@@ -243,6 +243,40 @@ class Pipeline(Generic[T]):
                 yield from branch_fn(Pipeline(snapshot))
         return self._chain(_branch)
 
+    def enumerate(self, start: int = 0) -> Pipeline[tuple[int, T]]:
+        """Pair each item with its index."""
+        def _enumerate(data: Iterable) -> Iterable:
+            for i, item in builtins_enumerate(data, start):
+                yield (i, item)
+        return self._chain(_enumerate)
+
+    def zip_with(self, other: Iterable) -> Pipeline[tuple]:
+        """Pair items from this pipeline with items from another iterable."""
+        def _zip(data: Iterable) -> Iterable:
+            yield from zip(data, other)
+        return self._chain(_zip)
+
+    def take_while(self, predicate: Callable[[T], bool]) -> Pipeline[T]:
+        """Take items while predicate returns True, stop at first False."""
+        def _take_while(data: Iterable) -> Iterable:
+            for item in data:
+                if predicate(item):
+                    yield item
+                else:
+                    break
+        return self._chain(_take_while)
+
+    def skip_while(self, predicate: Callable[[T], bool]) -> Pipeline[T]:
+        """Skip items while predicate returns True, then yield the rest."""
+        def _skip_while(data: Iterable) -> Iterable:
+            skipping = True
+            for item in data:
+                if skipping and predicate(item):
+                    continue
+                skipping = False
+                yield item
+        return self._chain(_skip_while)
+
     def dry_run(self, data: Iterable[T] | None = None) -> list[dict[str, Any]]:
         """Execute the pipeline logging each step's input/output without side effects.
 
@@ -400,6 +434,7 @@ class Pipeline(Generic[T]):
 import builtins as _builtins
 builtins_min = _builtins.min
 builtins_max = _builtins.max
+builtins_enumerate = _builtins.enumerate
 
 
 def _make_key_fn(key: str | Callable | None) -> Callable:
@@ -421,7 +456,7 @@ def _infer_op_name(op: Callable) -> str:
         if part in (
             "filter", "map", "flat_map", "flatten", "sort_by", "unique_by",
             "take", "skip", "each", "window", "deduplicate", "chunk",
-            "tap", "branch",
+            "tap", "branch", "enumerate", "take_while", "skip_while",
         ):
             return part
     # Fall back to the function's __name__
