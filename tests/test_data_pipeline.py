@@ -456,3 +456,43 @@ def test_dry_run_no_data_raises():
 def test_dry_run_empty_pipeline():
     log = Pipeline([1, 2, 3]).dry_run()
     assert log == []
+
+
+def test_enumerate():
+    result = Pipeline([10, 20, 30]).enumerate().collect()
+    assert result == [(0, 10), (1, 20), (2, 30)]
+
+
+def test_enumerate_start():
+    result = Pipeline([10, 20]).enumerate(start=5).collect()
+    assert result == [(5, 10), (6, 20)]
+
+
+def test_zip_with():
+    result = Pipeline([1, 2, 3]).zip_with(["a", "b", "c"]).collect()
+    assert result == [(1, "a"), (2, "b"), (3, "c")]
+
+
+def test_zip_with_unequal_lengths():
+    result = Pipeline([1, 2]).zip_with(["a", "b", "c"]).collect()
+    assert result == [(1, "a"), (2, "b")]
+
+
+def test_take_while():
+    result = Pipeline([1, 2, 3, 4, 5]).take_while(lambda x: x < 4).collect()
+    assert result == [1, 2, 3]
+
+
+def test_take_while_all_true():
+    result = Pipeline([1, 2, 3]).take_while(lambda x: x < 10).collect()
+    assert result == [1, 2, 3]
+
+
+def test_skip_while():
+    result = Pipeline([1, 2, 3, 4, 5]).skip_while(lambda x: x < 3).collect()
+    assert result == [3, 4, 5]
+
+
+def test_skip_while_all_true():
+    result = Pipeline([1, 2, 3]).skip_while(lambda x: x < 10).collect()
+    assert result == []
