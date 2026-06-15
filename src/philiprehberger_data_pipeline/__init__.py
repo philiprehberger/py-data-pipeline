@@ -349,6 +349,46 @@ class Pipeline(Generic[T]):
         """Count the number of items."""
         return sum(1 for _ in self._execute())
 
+    def peek(self, n: int = 5) -> list[T]:
+        """Execute the pipeline and return the first *n* items as a list.
+
+        Useful for inspecting the head of a long pipeline during debugging.
+
+        Args:
+            n: Number of items to materialize. Must be non-negative.
+
+        Returns:
+            List of up to *n* items.
+        """
+        if n < 0:
+            raise ValueError("peek count must be non-negative")
+        result: list[T] = []
+        for item in self._execute():
+            if len(result) >= n:
+                break
+            result.append(item)
+        return result
+
+    def count_by(self, key: str | Callable) -> dict[Any, int]:
+        """Count occurrences per key value.
+
+        Args:
+            key: Dict-key string or callable producing the grouping key.
+
+        Returns:
+            Dict mapping each distinct key value to its occurrence count.
+        """
+        if isinstance(key, str):
+            k = key
+            key_fn: Callable = lambda item: item[k] if isinstance(item, dict) else getattr(item, k)
+        else:
+            key_fn = key
+
+        counts: dict[Any, int] = defaultdict(int)
+        for item in self._execute():
+            counts[key_fn(item)] += 1
+        return dict(counts)
+
     def group_by(self, key: str | Callable) -> dict[Any, list[T]]:
         """Group items by key and return a dict."""
         if isinstance(key, str):

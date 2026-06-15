@@ -496,3 +496,49 @@ def test_skip_while():
 def test_skip_while_all_true():
     result = Pipeline([1, 2, 3]).skip_while(lambda x: x < 10).collect()
     assert result == []
+
+
+def test_peek_default_n():
+    result = Pipeline([10, 20, 30, 40, 50, 60, 70]).peek()
+    assert result == [10, 20, 30, 40, 50]
+
+
+def test_peek_custom_n():
+    result = Pipeline([1, 2, 3, 4]).peek(2)
+    assert result == [1, 2]
+
+
+def test_peek_stops_at_short_source():
+    result = Pipeline([1, 2]).peek(10)
+    assert result == [1, 2]
+
+
+def test_peek_zero():
+    result = Pipeline([1, 2, 3]).peek(0)
+    assert result == []
+
+
+def test_peek_negative_raises():
+    with pytest.raises(ValueError):
+        Pipeline([1, 2, 3]).peek(-1)
+
+
+def test_count_by_dict_key():
+    data = [
+        {"category": "a"},
+        {"category": "b"},
+        {"category": "a"},
+        {"category": "a"},
+    ]
+    counts = Pipeline(data).count_by("category")
+    assert counts == {"a": 3, "b": 1}
+
+
+def test_count_by_callable():
+    counts = Pipeline(range(10)).count_by(lambda x: x % 3)
+    assert counts == {0: 4, 1: 3, 2: 3}
+
+
+def test_count_by_empty():
+    counts = Pipeline([]).count_by("x")
+    assert counts == {}

@@ -4,6 +4,8 @@
 [![PyPI version](https://img.shields.io/pypi/v/philiprehberger-data-pipeline.svg)](https://pypi.org/project/philiprehberger-data-pipeline/)
 [![Last updated](https://img.shields.io/github/last-commit/philiprehberger/py-data-pipeline)](https://github.com/philiprehberger/py-data-pipeline/commits/main)
 
+![philiprehberger-data-pipeline](https://raw.githubusercontent.com/philiprehberger/py-data-pipeline/main/package-card.webp)
+
 Composable data transformation pipeline with lazy evaluation.
 
 ## Installation
@@ -139,6 +141,24 @@ average = p.avg("amount")
 grouped = p.group_by("category")
 ```
 
+### Peek and count_by
+
+`peek(n)` materializes the first `n` items for quick inspection without committing to a `collect()`. `count_by(key)` returns a per-key occurrence count, similar to `group_by` but without the per-value lists.
+
+```python
+from philiprehberger_data_pipeline import Pipeline
+
+Pipeline([10, 20, 30, 40, 50, 60]).filter(lambda x: x > 15).peek(3)
+# [20, 30, 40]
+
+Pipeline([
+    {"category": "fruit"},
+    {"category": "veg"},
+    {"category": "fruit"},
+]).count_by("category")
+# {"fruit": 2, "veg": 1}
+```
+
 ### Export
 
 ```python
@@ -178,6 +198,8 @@ Pipeline(data).filter(lambda x: x["active"]).to_json("output.json")
 | `.max(key)` | Find maximum value |
 | `.reduce(fn, initial)` | Reduce to single value |
 | `.group_by(key)` | Group into dict |
+| `.count_by(key)` | Count occurrences per key value |
+| `.peek(n)` | Return the first `n` items as a list (debugging) |
 | `.to_csv(path)` | Export as CSV |
 | `.to_json(path)` | Export as JSON |
 | `.enumerate(start)` | Pair each item with its index |

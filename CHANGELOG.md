@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0 (2026-06-15)
+
+- Add `peek(n=5)` terminal that materializes the first `n` items for quick inspection during debugging
+- Add `count_by(key)` terminal returning a per-key occurrence count
+- Add package-card image to README
+
 ## 0.5.0 (2026-04-06)
 
 - Add `enumerate(start)` to pair each item with its index
